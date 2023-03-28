@@ -10,7 +10,7 @@ from PIL import Image
 import albumentations as A
 from transformers import MaskFormerImageProcessor, MaskFormerForInstanceSegmentation
 
-from facade_datasets.const import class2id_general
+from facade_datasets.const import id2class_general
 from facade_datasets.etrims.const import images_base_path as cmp_images_base_path
 
 
@@ -19,7 +19,7 @@ def build_args():
                     prog='ProgramName',
                     description='What the program does',
                     epilog='Text at the bottom of help')
-    parser.add_argument('-m', '--model')      
+    parser.add_argument('-m', '--model', default=None)      
     parser.add_argument('-i', '--input-path', default=cmp_images_base_path / os.listdir(cmp_images_base_path)[0])      
     parser.add_argument('-o', '--output-path', default="./segmentation_example")      
     return parser
@@ -66,8 +66,12 @@ def preprocess_image(image):
 
 
 def eval(model, inputs):
-    model = MaskFormerForInstanceSegmentation.from_pretrained(model)
-    model
+    if model is not None:
+        model = MaskFormerForInstanceSegmentation.from_pretrained(model)
+    else: # if you want to compare to before-uptrain result
+        model = MaskFormerForInstanceSegmentation.from_pretrained("facebook/maskformer-swin-large-coco",
+                                                          id2label=id2class_general,
+                                                          ignore_mismatched_sizes=True)
     outputs = model(**inputs)
     # model predicts class_queries_logits of shape `(batch_size, num_queries)`
     # and masks_queries_logits of shape `(batch_size, num_queries, height, width)`
