@@ -15,9 +15,9 @@ class FacadeDataset(Dataset):
         self.processor = processor
         self.transform = transform
 
-        self.idx2filename = list(
+        self.idx2filename = list(set(
             map(lambda x: x.split(".")[0], sorted(os.listdir(self.IMAGES_BASE_PATH)))
-        )
+        ))
     
     def _filename_to_file(self, filename, is_label=True):
         return f"{filename}{'.png' if is_label else '.jpg'}"
