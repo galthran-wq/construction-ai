@@ -163,9 +163,16 @@ class CustomTrainer(Trainer):
                     )
                 if labels_host is not None:
                     labels = nested_numpify(labels_host)
-                    all_labels = (
-                        labels if all_labels is None else nested_concat(all_labels, labels, padding_index=-100)
-                    )
+                    accumulated_n = len(labels_host[0]) # = len(labels[1])
+                    if all_labels is None:
+                        all_labels = [
+                            [ labels[label_index][i] for i in range(accumulated_n) ]
+                            for label_index in range(2) 
+                        ]
+                    else:
+                        for label_index in range(2):
+                            for i in range(batch_size):
+                                all_labels[label_index].append(labels[label_index][i])
 
                 # Set back to None to begin a new accumulation
                 losses_host, preds_host, inputs_host, labels_host = None, None, None, None
@@ -188,7 +195,16 @@ class CustomTrainer(Trainer):
             )
         if labels_host is not None:
             labels = nested_numpify(labels_host)
-            all_labels = labels if all_labels is None else nested_concat(all_labels, labels, padding_index=-100)
+            accumulated_n = len(labels_host[0]) # = len(labels[1])
+            if all_labels is None:
+                all_labels = [
+                    [ labels[label_index][i] for i in range(accumulated_n) ]
+                    for label_index in range(2) 
+                ]
+            else:
+                for label_index in range(2):
+                    for i in range(batch_size):
+                        all_labels[label_index].append(labels[label_index][i])
 
         # Number of samples
         if has_length(eval_dataset):
