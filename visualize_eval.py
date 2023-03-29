@@ -48,15 +48,23 @@ def draw_panoptic_segmentation(segmentation, segments, model, ax):
     return fig, axs
 
 
-def preprocess_image(image):
+def preprocess_image(image, type="etrims"):
     # note that you can include more fancy data augmentation methods here
     
-    ADE_MEAN = np.array([123.675, 116.280, 103.530]) / 255
-    ADE_STD = np.array([58.395, 57.120, 57.375]) / 255
+    etrims_mean , etrims_std = torch.tensor([0.0017, 0.0017, 0.0017]), torch.tensor([0.0011, 0.0011, 0.0012])
+    cmp_mean , cmp_std = torch.tensor([0.0019, 0.0018, 0.0016]), torch.tensor([0.0010, 0.0009, 0.0009])
+    cars_mean, cars_std = torch.tensor([0.0021, 0.0020, 0.0023]), torch.tensor([0.0012, 0.0012, 0.0012])
+
+    if type == "etrims":
+        mean, std = etrims_mean, etrims_std
+    elif type == "cmp":
+        mean, std = cmp_mean, cmp_std
+    elif type == "cars":
+        mean, std = cars_mean, cars_std
 
     train_transform = A.Compose([
         A.Resize(width=512, height=512),
-        A.Normalize(mean=ADE_MEAN, std=ADE_STD),
+        A.Normalize(mean=mean, std=std),
     ])
     processor = MaskFormerImageProcessor(do_resize=False, do_rescale=False, do_normalize=False, ignore_index=0)
     image_arr = np.array(image)
@@ -89,7 +97,13 @@ def eval(model, inputs):
 if __name__ == "__main__":
     args = build_args().parse_args()
     image = Image.open(args.input_path)
-    preprocessed_image = preprocess_image(image)
+    if "cmp" in str(args.input_path):
+        type = "cmp"
+    elif "cars" in str(args.input_path):
+        type = "cars"
+    elif "etrims" in str(args.input_path):
+        type = "etrims"
+    preprocessed_image = preprocess_image(image, type=type)
     model, result = eval(args.model, preprocessed_image)
     fig, axs = plt.subplots(1, 2, figsize=(15, 10))
     draw_panoptic_segmentation(result['segmentation'], result['segments_info'], model = model, ax = axs[1])

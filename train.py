@@ -16,21 +16,26 @@ from facade_datasets.etrims.dataset import EtrimsDataset
 from facade_datasets.oxford_cars.dataset import CarsTrainDataset, CarsTestDataset
 from facade_datasets.cmp.dataset import CMPDataset
 
-ADE_MEAN = np.array([123.675, 116.280, 103.530]) / 255
-ADE_STD = np.array([58.395, 57.120, 57.375]) / 255
-
 # note that you can include more fancy data augmentation methods here
-train_transform = A.Compose([
+etrims_train_transform = A.Compose([
     A.Resize(width=256, height=256),
-    A.Normalize(mean=ADE_MEAN, std=ADE_STD),
+    A.Normalize(mean=np.array([0,0,0]), std=np.array([1,1,1])),
+])
+cmp_train_transform = A.Compose([
+    A.Resize(width=256, height=256),
+    A.Normalize(mean=np.array([0,0,0]), std=np.array([1,1,1])),
+])
+cars_train_transform = A.Compose([
+    A.Resize(width=256, height=256),
+    A.Normalize(mean=np.array([0,0,0]), std=np.array([1,1,1])),
 ])
 processor = MaskFormerImageProcessor(do_resize=False, do_rescale=False, do_normalize=False, ignore_index=0)
 
 
-etrims = EtrimsDataset(transform=train_transform, processor=processor)
-cmp = CMPDataset(transform=train_transform, processor=processor)
-cars_train = CarsTrainDataset(transform=train_transform, processor=processor) 
-cars_test = CarsTestDataset(transform=train_transform, processor=processor) 
+etrims = EtrimsDataset(transform=etrims_train_transform, processor=processor)
+cmp = CMPDataset(transform=cmp_train_transform, processor=processor)
+cars = CarsTrainDataset(transform=cars_train_transform, processor=processor) 
+cars_test = CarsTestDataset(transform=cars_train_transform, processor=processor) 
 
 # %%
 import torch
@@ -48,16 +53,29 @@ cmp_train, cmp_val = torch.utils.data.random_split(
     generator=cmp_generator
 )
 cars_train, cars_val = torch.utils.data.random_split(
-    cars_train, [0.8, 0.2],
+    cars, [0.8, 0.2],
     generator=cars_generator
 )
+
+from facade_datasets.utils import compute_mean_std
+for train_dataset, transform in zip(
+    [etrims_train, cmp_train, cars_train],
+    [etrims.transform, cmp.transform, cars.transform],
+):
+    mean, std = compute_mean_std(train_dataset, batch_size=8)
+    mean /= 255.
+    std /= 255.
+    transform[1].mean = mean
+    transform[1].std = std
+    print(mean, std)
+
 
 # %%
 len(etrims_train), len(etrims_val), len(cars_train), len(cars_val)
 
 # %%
 from torch.utils.data import ConcatDataset
-train = ConcatDataset([torch.utils.data.Subset(etrims_train, [0]), torch.utils.data.Subset(cmp_train,[0]), torch.utils.data.Subset(cars_train, [0])])
+train = ConcatDataset([etrims_train, cmp_train, cars_train])
 val = ConcatDataset([etrims_val, cmp_val, cars_val])
 
 # %%
@@ -178,18 +196,18 @@ def compute_metrics(eval_pred):
 
 training_args = TrainingArguments(
     # logging_dir="logs",
-    output_dir="test_trainer__overfit_batch2",
+    output_dir="al_ds__5e6",
     # learning_rate=5e-4,
     save_strategy="steps",
-    save_steps=1500,
+    save_steps=5000,
     # evaluation_strategy="epoch",
     evaluation_strategy="steps",
-    eval_steps=500,
-    logging_steps=10,
+    eval_steps=1500,
+    logging_steps=100,
     dataloader_pin_memory=False,
     per_device_eval_batch_size=1,
     per_device_train_batch_size=1,
-    num_train_epochs=1000,
+    num_train_epochs=200,
     eval_accumulation_steps=10,
     lr_scheduler_type="constant"
 )
@@ -207,38 +225,4 @@ trainer = CustomTrainer(
 # trainer.evaluate(val)
 
 # %%
-trainer.train()
-
-# %%
-# _--------------------------------
-
-# %%
-# from transformers import AutoImageProcessor, MaskFormerForInstanceSegmentation
-# from PIL import Image
-# import requests
-
-# # load MaskFormer fine-tuned on COCO panoptic segmentation
-# image_processor = AutoImageProcessor.from_pretrained("facebook/maskformer-swin-base-coco")
-# model = MaskFormerForInstanceSegmentation.from_pretrained("facebook/maskformer-swin-base-coco")
-
-# url = "http://images.cocodataset.org/val2017/000000039769.jpg"
-# image = Image.open(requests.get(url, stream=True).raw)
-# inputs = image_processor(images=image, return_tensors="pt")
-
-# outputs = model(**inputs)
-# # model predicts class_queries_logits of shape `(batch_size, num_queries)`
-# # and masks_queries_logits of shape `(batch_size, num_queries, height, width)`
-# class_queries_logits = outputs.class_queries_logits
-# masks_queries_logits = outputs.masks_queries_logits
-
-# # you can pass them to image_processor for postprocessing
-# result = image_processor.post_process_panoptic_segmentation(outputs, target_sizes=[image.size[::-1]])[0]
-
-# # we refer to the demo notebooks for visualization (see "Resources" section in the MaskFormer docs)
-# predicted_panoptic_map = result["segmentation"]
-# list(predicted_panoptic_map.shape)
-
-# # %%
-# result["segments_info"]
-
-
+trainer.train("./al_ds__5e6/checkpoint-60000")
