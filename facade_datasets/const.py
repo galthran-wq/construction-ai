@@ -20,3 +20,13 @@ class2id_general = {
     value: key 
     for key, value in id2class_general.items() 
 }
+
+id2class_converted = {
+    BUILDING_ID-1: "building",
+    DOOR_ID-1: "door",
+    WINDOW_ID-1: "window",
+}
+class2id_converted = { 
+    value: key 
+    for key, value in id2class_converted.items() 
+}
