@@ -7,8 +7,8 @@
 
 ## Results
 
-1) Uptrained semantic segmentation SegFormer with mIoU 0.7.
-2) Uptrained MaskFormer for panoptic segmentation with more or less descent performance on counting windows. Differentiating between buildings failed miserably.
+1) [Uptrained semantic segmentation SegFormer](https://huggingface.co/galthran/segformer-facade/) with mIoU 0.7.
+2) [Uptrained MaskFormer for panoptic segmentation](https://huggingface.co/galthran/maskformer-facade-panoptic) with more or less descent performance on counting windows. Differentiating between buildings failed miserably.
 
 ![alt text](segmentation_example.png)
 
@@ -25,6 +25,7 @@ It is common to classify the object segmentation problem into two:
 
 The combination of the two yields:
 - Panoptic segmentation -- assign both semantic and instance labels to each pixel.
+
 ### Panoptic segmentation
 
  - [CMP](https://cmp.felk.cvut.cz/~tylecr1/facade/)
@@ -97,7 +98,7 @@ The structure is ```facade_datasets/${df_name}/```, which contains:
 
 
 The ```train.py``` and respective ```train_utils.py``` use the dataset with ```transformers.Trainer``` to finetune the model.
-I split each dataset into train/val with 80/20 ratio and train
+I split each dataset into train/val with 80/20 ratio.
 There is a helper script```visualize_eval.py```, which produces the predicted segmentation images. 
 
 ## Experiments
@@ -106,7 +107,7 @@ The logs are in (experiments/) with format ```${experiment_name}/runs```.
 An experiment folder sometimes conatins an image with predicted segmentation. 
 If it does not, then there was nothing to write home about.
 
-I started by closely inspecting the datasets: [datasets_check.ipynb](datasets_check.ipynb)
+I started by closely inspecting the datasets: [dataset_check.ipynb](dataset_check.ipynb)
 Once I knew the datasets were fine, the conversino was successful, I started of with an easy semantic segmentation case problem:
 
 ### Task 1.
@@ -133,7 +134,15 @@ There is still room for performance improvement, namely, use all the purely sema
 
 ### Task 2, 3
 
-The main problem here was that I couldn't overfit the batch. The loss wouldn't go
+The main problem here was that I couldn't overfit the batch. The loss wouldn't go to zero even after. The details are:
+
+- ```overfit_batch```
+- ```overfit_batch__no_cars```
+- ```overfit_batch__no_cmp```
+- ```overfit_batch__new_normalize_all_ds```
+
+The issue is still unresolved. Probably one has to continue training even further.
+At any rate, I've procceded.
 
 Interesting experiments are:
 
