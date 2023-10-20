@@ -79,18 +79,18 @@ class CloudDataset(Dataset):
         return np.expand_dims(raw_mask, 0) if add_dims else raw_mask
     
     def __getitem__(self, idx):
-        x = torch.tensor(self.open_as_array(idx, invert=self.pytorch, include_nir=True, false_color_aug=True), dtype=torch.float32)
-        y = torch.tensor(self.open_mask(idx, add_dims=False), dtype=torch.torch.int64)
+        x = self.open_as_array(idx, invert=False, include_nir=False, false_color_aug=True) + 1e-6
+        y = self.open_mask(idx, add_dims=False)
 
         # apply transforms
         if self.transform is not None:
             transformed = self.transform(image=x, mask=y)
             image, class_id_map = transformed['image'], transformed['mask']
 
-        inputs = self.processor(image, class_id_map, return_tensors="pt")
-
-        for k,v in inputs.items():
-          inputs[k].squeeze_() # remove batch dimension
+        inputs = self.processor([image], [class_id_map], return_tensors="pt")
+        inputs = {k: v.squeeze() if isinstance(v, torch.Tensor) else v[0] for k,v in inputs.items()}
+        # for k,v in inputs.items():
+        #   inputs[k][0].squeeze_() # remove batch dimension
 
         return inputs
     
