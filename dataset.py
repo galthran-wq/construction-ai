@@ -28,6 +28,7 @@ class CloudDataset(Dataset):
         
         # Loop through the files in red folder and combine, into a dictionary, the other bands
         self.files = [self.combine_files(f, g_dir, b_dir, nir_dir, gt_dir) for f in r_dir.iterdir() if not f.is_dir()]
+        self.files = self.remove_files(self.files)
         self.pytorch = True
         
     def combine_files(self, r_file: Path, g_dir, b_dir,nir_dir, gt_dir):
@@ -38,6 +39,14 @@ class CloudDataset(Dataset):
                  'gt': gt_dir/r_file.name.replace('red', 'gt')}
         
         return files
+                                    
+    def remove_files(self, files):
+        new_files = []
+        for i, entry in enumerate(files):
+            y = self.open_mask(i, add_dims=False)
+            if len(np.unique(y)) != 1:
+                new_files.append(entry)
+        return new_files
                                        
     def __len__(self):
         return len(self.files)
