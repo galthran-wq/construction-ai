@@ -18,7 +18,7 @@ class CustomTrainer(Trainer):
         return (loss, outputs) if return_outputs else loss
 
 
-    def evaluation_loop(
+    def evaluation_loop2(
         self,
         dataloader: DataLoader,
         description: str,

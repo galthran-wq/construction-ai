@@ -79,8 +79,9 @@ class CloudDataset(Dataset):
         return np.expand_dims(raw_mask, 0) if add_dims else raw_mask
     
     def __getitem__(self, idx):
-        x = self.open_as_array(idx, invert=False, include_nir=False, false_color_aug=True) + 1e-6
+        x = self.open_as_array(idx, invert=False, include_nir=False, false_color_aug=True)
         y = self.open_mask(idx, add_dims=False)
+        y[0][0] = 1
 
         # apply transforms
         if self.transform is not None:
@@ -91,6 +92,8 @@ class CloudDataset(Dataset):
         inputs = {k: v.squeeze() if isinstance(v, torch.Tensor) else v[0] for k,v in inputs.items()}
         # for k,v in inputs.items():
         #   inputs[k][0].squeeze_() # remove batch dimension
+        if inputs['mask_labels'].shape[0] == 2:
+            print(1)
 
         return inputs
     
