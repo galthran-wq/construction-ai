@@ -5,10 +5,11 @@ import albumentations as A
 import evaluate
 from transformers import TrainingArguments, Trainer
 import torch
+import torch.nn as nn
 import numpy as np
 from transformers import AutoImageProcessor, MaskFormerImageProcessor
 from transformers.models.maskformer.modeling_maskformer import MaskFormerModelOutput
-from transformers import AutoModelForInstanceSegmentation
+from transformers import AutoModelForSemanticSegmentation
 
 from dataset import CloudDataset
 from train_utils import CustomTrainer
@@ -25,15 +26,18 @@ def get_dataset(dataset_str: str):
 def prepare_compute_metrics(num_labels, processor: MaskFormerImageProcessor):
     def compute_metrics(eval_pred):
         logits, labels = eval_pred
-        n = labels[0].shape[0]
-        keys = ["class_queries_logits", "masks_queries_logits", ]
-        logits_dict = { key: torch.Tensor(value) for key, value in zip(keys, logits) }
-        logits_out = MaskFormerModelOutput(logits_dict)
-        predicted_semantic_map = processor.post_process_semantic_segmentation(logits_out, target_sizes=[(256,256) for i in range(n)])
-        predicted_semantic_map = torch.stack(predicted_semantic_map)
+        logits_tensor = torch.from_numpy(logits)
+        logits_tensor = nn.functional.interpolate(
+            logits_tensor,
+            size=labels.shape[-2:],
+            mode="bilinear",
+            align_corners=False,
+        ).argmax(dim=1)
+        pred_labels = logits_tensor.detach().cpu().numpy()
+
         result = metric.compute(
-            predictions=predicted_semantic_map, 
-            references=labels[0][:,0,:,:], 
+            predictions=pred_labels, 
+            references=labels, 
             num_labels=num_labels, 
             ignore_index=255
         )
@@ -55,13 +59,14 @@ def train(
     lr=1e-4
 ):
     # checkpoint = "facebook/maskformer-swin-large-coco"
-    dataset_str = "cloud"
+    # dataset_str = "cloud"
     Dataset = get_dataset(dataset_str)
     num_labels = len(Dataset.ID2CLASS.keys())
     # Replace the head of the pre-trained model
     # We specify ignore_mismatched_sizes=True to replace the already fine-tuned classification head by a new one
-    model = AutoModelForInstanceSegmentation.from_pretrained(checkpoint,
+    model = AutoModelForSemanticSegmentation.from_pretrained(checkpoint,
                                                             id2label=Dataset.ID2CLASS,
+                                                            label2id=Dataset.CLASS2ID,
                                                             ignore_mismatched_sizes=True)
 
 
@@ -100,9 +105,9 @@ def train(
         save_strategy="epoch",
         # save_strategy="steps",
         # save_steps=10,
-        evaluation_strategy="epoch",
-        # evaluation_strategy="steps",
-        # eval_steps=10,
+        # evaluation_strategy="epoch",
+        evaluation_strategy="steps",
+        eval_steps=10,
         logging_steps=50,
         dataloader_pin_memory=False,
         per_device_eval_batch_size=16,
@@ -113,7 +118,7 @@ def train(
     )
     print(training_args.learning_rate)
 
-    trainer = CustomTrainer(
+    trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=train,
