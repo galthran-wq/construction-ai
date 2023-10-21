@@ -11,6 +11,10 @@ class CloudDataset(Dataset):
         0: "background",
         1: "cloud"
     }
+    CLASS2ID= {
+        "background": 0,
+        "cloud": 1
+    }
 
     def __init__(self, processor=None, transform=None, base_path=None):
         super().__init__()
@@ -101,8 +105,6 @@ class CloudDataset(Dataset):
         inputs = {k: v.squeeze() if isinstance(v, torch.Tensor) else v[0] for k,v in inputs.items()}
         # for k,v in inputs.items():
         #   inputs[k][0].squeeze_() # remove batch dimension
-        if inputs['mask_labels'].shape[0] == 2:
-            print(1)
 
         return inputs
     
