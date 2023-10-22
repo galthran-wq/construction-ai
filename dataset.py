@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import torch
 
@@ -115,3 +117,67 @@ class CloudDataset(Dataset):
     def __repr__(self):
         s = 'Dataset class with {} files'.format(self.__len__())
         return s
+    
+
+class LoveDADataset(Dataset):
+    ID2CLASS = {
+        0: "Background",
+        1: "building",
+        2: "road",
+        3: "water",
+        4: "barren",
+        5: "forest",
+        6: "agriculture",
+    }
+
+    def __init__(self, processor=None, transform=None, base_path=None):
+        super().__init__()
+        if base_path is None:
+            base_path = Path("./geo_datasets/loveda/Train")
+        self.rural = base_path / "Rural"
+        self.urban = base_path / "Urban"
+        self.MASKS_DIR = "masks_png"
+        self.IMAGES_DIR = "images_png"
+        self.rural_len = len(os.listdir(self.rural / self.IMAGES_DIR))
+        self.urban_len = len(os.listdir(self.urban / self.IMAGES_DIR))
+        self.transform = transform
+        self.processor = processor
+
+    def __getitem__(self, idx):
+        if idx >= self.rural_len:
+            # urban
+            y = np.array(Image.open(self.urban / self.MASKS_DIR / f"{idx}.png"))
+            y -= 1 # reduce labels
+            x = np.array(Image.open(
+                self.urban / self.IMAGES_DIR / f"{idx}.png"
+            ).convert("RGB")) 
+            x = x / np.iinfo(x.dtype).max
+        else:
+            y = np.array(Image.open(self.rural / self.MASKS_DIR / f"{idx}.png"))
+            y -= 1 # reduce labels
+            x = np.array(Image.open(
+                self.rural / self.IMAGES_DIR / f"{idx}.png"
+            ).convert("RGB"))
+            x = x / np.iinfo(x.dtype).max
+
+        # apply transforms
+        if self.transform is not None:
+            transformed = self.transform(image=x, mask=y)
+            image, class_id_map = transformed['image'], transformed['mask']
+
+            try:
+                inputs = self.processor([image], [class_id_map], return_tensors="pt")
+                inputs = {k: v.squeeze() if isinstance(v, torch.Tensor) else v[0] for k,v in inputs.items()}
+            except TypeError:
+                inputs = self.processor(images=[image], return_tensors="pt")
+                inputs = {k: v.squeeze() if isinstance(v, torch.Tensor) else v[0] for k,v in inputs.items()}
+                inputs['labels'] = torch.tensor(class_id_map, dtype=torch.long)
+            # for k,v in inputs.items():
+            #   inputs[k][0].squeeze_() # remove batch dimension
+ 
+            return inputs
+        else:
+            return x, y
+       
+    def __len__(self):
+        return self.urban_len + self.rural_len

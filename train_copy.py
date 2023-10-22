@@ -11,7 +11,7 @@ from transformers import AutoImageProcessor, MaskFormerImageProcessor
 from transformers.models.maskformer.modeling_maskformer import MaskFormerModelOutput
 from transformers import AutoModelForSemanticSegmentation
 
-from dataset import CloudDataset
+from dataset import CloudDataset, LoveDADataset
 from train_utils import CustomTrainer
 from facade_datasets.utils import collate_fn
 from facade_datasets.utils import compute_mean_std
@@ -19,9 +19,13 @@ from facade_datasets.utils import compute_mean_std
 metric = evaluate.load("mean_iou")
 accuracy = evaluate.load("accuracy")
 
+
 def get_dataset(dataset_str: str):
     if dataset_str == "cloud":
         return CloudDataset
+    elif dataset_str == "loveda":
+        return LoveDADataset
+
 
 def prepare_compute_metrics(num_labels, processor: MaskFormerImageProcessor):
     def compute_metrics(eval_pred):
