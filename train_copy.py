@@ -11,7 +11,7 @@ from transformers import AutoImageProcessor, MaskFormerImageProcessor
 from transformers.models.maskformer.modeling_maskformer import MaskFormerModelOutput
 from transformers import AutoModelForSemanticSegmentation
 
-from dataset import CloudDataset, LoveDADataset
+from dataset import CloudDataset, LoveDADataset, FloodNet
 from train_utils import CustomTrainer
 from facade_datasets.utils import collate_fn
 from facade_datasets.utils import compute_mean_std
@@ -25,6 +25,8 @@ def get_dataset(dataset_str: str):
         return CloudDataset
     elif dataset_str == "loveda":
         return LoveDADataset
+    elif dataset_str == "floodnet":
+        return FloodNet
 
 
 def prepare_compute_metrics(num_labels, processor: MaskFormerImageProcessor):
@@ -72,7 +74,6 @@ def train(
     # We specify ignore_mismatched_sizes=True to replace the already fine-tuned classification head by a new one
     model = AutoModelForSemanticSegmentation.from_pretrained(checkpoint,
                                                             id2label=Dataset.ID2CLASS,
-                                                            label2id=Dataset.CLASS2ID,
                                                             ignore_mismatched_sizes=True)
 
 

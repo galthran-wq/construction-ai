@@ -103,8 +103,13 @@ class CloudDataset(Dataset):
             transformed = self.transform(image=x, mask=y)
             image, class_id_map = transformed['image'], transformed['mask']
 
-        inputs = self.processor([image], [class_id_map], return_tensors="pt")
-        inputs = {k: v.squeeze() if isinstance(v, torch.Tensor) else v[0] for k,v in inputs.items()}
+        try:
+            inputs = self.processor([image], [class_id_map], return_tensors="pt")
+            inputs = {k: v.squeeze() if isinstance(v, torch.Tensor) else v[0] for k,v in inputs.items()}
+        except TypeError:
+            inputs = self.processor(images=[image], return_tensors="pt")
+            inputs = {k: v.squeeze() if isinstance(v, torch.Tensor) else v[0] for k,v in inputs.items()}
+            inputs['labels'] = torch.tensor(class_id_map, dtype=torch.long)
         # for k,v in inputs.items():
         #   inputs[k][0].squeeze_() # remove batch dimension
 
@@ -181,3 +186,75 @@ class LoveDADataset(Dataset):
        
     def __len__(self):
         return self.urban_len + self.rural_len
+
+
+class FloodNet(Dataset):
+    CLASS2ID = {
+        'Background':0, 
+        'Building-flooded':1, 
+        'Building-non-flooded':2, 
+        'Road-flooded':3, 
+        'Road-non-flooded':4, 
+        'Water':5, 
+        'Tree':6, 
+        'Vehicle':7, 
+        'Pool':8, 
+        'Grass':9
+    }
+    ID2CLASS= {
+        0: 'Background', 
+        1: 'Building-flooded', 
+        2: 'Building-non-flooded', 
+        3: 'Road-flooded', 
+        4: 'Road-non-flooded', 
+        5: 'Water', 
+        6: 'Tree', 
+        7: 'Vehicle', 
+        8: 'Pool',
+        9: 'Grass'
+    }
+
+    def __init__(self, processor=None, transform=None, base_path=None):
+        super().__init__()
+        if base_path is None:
+            base_path = Path("./geo_datasets/floodnet/train")
+        self.base_path = base_path
+        self.MASKS_DIR = "train-label-img"
+        self.IMAGES_DIR = "train-org-img"
+        self.len = len(os.listdir(base_path / self.MASKS_DIR))
+        self.idx2filename = {
+            i: file.split('.')[0]
+            for i, file in enumerate(os.listdir(base_path / self.IMAGES_DIR))
+        }
+        self.transform = transform
+        self.processor = processor
+
+    def __getitem__(self, idx):
+        y = np.array(Image.open(self.base_path / self.MASKS_DIR / f"{self.idx2filename[idx]}_lab.png"))
+        y -= 1 # reduce labels
+        x = np.array(Image.open(
+            self.base_path / self.IMAGES_DIR / f"{self.idx2filename[idx]}.jpg"
+        ).convert("RGB"))
+        x = x / np.iinfo(x.dtype).max
+
+        # apply transforms
+        if self.transform is not None:
+            transformed = self.transform(image=x, mask=y)
+            image, class_id_map = transformed['image'], transformed['mask']
+
+            try:
+                inputs = self.processor([image], [class_id_map], return_tensors="pt")
+                inputs = {k: v.squeeze() if isinstance(v, torch.Tensor) else v[0] for k,v in inputs.items()}
+            except TypeError:
+                inputs = self.processor(images=[image], return_tensors="pt")
+                inputs = {k: v.squeeze() if isinstance(v, torch.Tensor) else v[0] for k,v in inputs.items()}
+                inputs['labels'] = torch.tensor(class_id_map, dtype=torch.long)
+            # for k,v in inputs.items():
+            #   inputs[k][0].squeeze_() # remove batch dimension
+ 
+            return inputs
+        else:
+            return x, y
+    
+    def __len__(self):
+        return self.len
