@@ -56,7 +56,9 @@ def train(
     dataset_str,
     output_dir=None,
     resume_from_checkpoint=None,
-    lr=1e-4
+    lr=1e-4,
+    h=256,
+    w=256,
 ):
     # checkpoint = "facebook/maskformer-swin-large-coco"
     # dataset_str = "cloud"
@@ -72,8 +74,8 @@ def train(
 
     # note that you can include more fancy data augmentation methods here
     transform = A.Compose([
-        A.Resize(width=256, height=256),
-        A.Normalize(),
+        A.Resize(width=w, height=h),
+        A.Normalize(mean=[0,0,0], std=[1,1,1]),
     ])
     processor = AutoImageProcessor.from_pretrained(
         checkpoint, 
@@ -139,6 +141,8 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--dataset')      
     parser.add_argument('-o', '--output-dir')      
     parser.add_argument('-r', '--resume', default=None)      
+    parser.add_argument("--height", default=256, type=int)      
+    parser.add_argument('-w', "--width", default=256, type=int)      
     parser.add_argument('--lr', default=1e-4, type=float)      
     args = parser.parse_args()
     train(
@@ -147,6 +151,8 @@ if __name__ == "__main__":
         output_dir=args.output_dir,
         resume_from_checkpoint=args.resume,
         lr=args.lr,
+        h=args.height,
+        w=args.width,
     )
 
 
