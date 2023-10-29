@@ -23,6 +23,8 @@ def build_args():
     parser.add_argument('-m', '--model', default=None)      
     parser.add_argument('-p', '--preprocessor', default=None)      
     parser.add_argument('-d', '--dataset')      
+    parser.add_argument('--height', default=256, type=int)      
+    parser.add_argument('-w', default=256, type=int)      
     parser.add_argument('-o', '--output-path', default="./segmentation_example")      
     parser.add_argument('-idx', default=0, type=int)      
     return parser
@@ -90,7 +92,7 @@ def eval(model, inputs):
 if __name__ == "__main__":
     args = build_args().parse_args()
     train_transform = A.Compose([
-        A.Resize(width=256, height=256),
+        A.Resize(width=args.w, height=args.height),
         A.Normalize(mean=[0,0,0], std=[1,1,1]),
     ])
     processor = AutoImageProcessor.from_pretrained(
@@ -104,9 +106,16 @@ if __name__ == "__main__":
     fig, axs = plt.subplots(1, 3, figsize=(15, 10))
     axs[0].imshow(dataset.open_as_array(idx))
     axs[1].imshow(result)
-    axs[2].imshow(inputs['labels'])
+    im = axs[2].imshow(inputs['labels'])
     axs[0].set_title("original image")
     axs[1].set_title("predicted segmentation")
     axs[2].set_title("true segmentation")
+    # get the colors of the values, according to the 
+    # colormap used by imshow
+    values = dataset.ID2CLASS
+    colors = [ im.cmap(im.norm(value)) for value in values]
+    # create a patch (proxy artist) for every color 
+    patches = [ mpatches.Patch(color=colors[i], label="{l}".format(l=values[i]) ) for i in range(len(values)) ]
+    axs[2].legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0. )
     fig.savefig(args.output_path)
 
