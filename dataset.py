@@ -147,6 +147,17 @@ class LoveDADataset(Dataset):
         self.urban_len = len(os.listdir(self.urban / self.IMAGES_DIR))
         self.transform = transform
         self.processor = processor
+    
+    def open_as_array(self, idx):
+        if idx >= self.rural_len:
+            x = np.array(Image.open(
+                self.urban / self.IMAGES_DIR / f"{idx}.png"
+            ).convert("RGB")) 
+        else:
+            x = np.array(Image.open(
+                self.rural / self.IMAGES_DIR / f"{idx}.png"
+            ).convert("RGB"))
+        return x
 
     def __getitem__(self, idx):
         if idx >= self.rural_len:
@@ -228,6 +239,12 @@ class FloodNet(Dataset):
         }
         self.transform = transform
         self.processor = processor
+    
+    def open_as_array(self, idx):
+        x = np.array(Image.open(
+            self.base_path / self.IMAGES_DIR / f"{self.idx2filename[idx]}.jpg"
+        ).convert("RGB"))
+        return x
 
     def __getitem__(self, idx):
         y = np.array(Image.open(self.base_path / self.MASKS_DIR / f"{self.idx2filename[idx]}_lab.png"))
