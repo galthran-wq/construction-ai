@@ -112,15 +112,15 @@ def train(
         save_strategy="epoch",
         # save_strategy="steps",
         # save_steps=10,
-        # evaluation_strategy="epoch",
-        evaluation_strategy="steps",
-        eval_steps=10,
+        evaluation_strategy="epoch",
+        # evaluation_strategy="steps",
+        # eval_steps=10,
         logging_steps=50,
         dataloader_pin_memory=False,
         per_device_eval_batch_size=16,
         per_device_train_batch_size=16,
         eval_accumulation_steps=16,
-        num_train_epochs=10,
+        num_train_epochs=120,
         lr_scheduler_type="constant"
     )
     print(training_args.learning_rate)
