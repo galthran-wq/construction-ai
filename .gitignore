@@ -3,3 +3,10 @@ test_trainer
 __pycache__
 .ipynb_checkpoints
 .vscode
+venv
+geo_datasets
+*experiments
+
+test
+logs
+mlruns
