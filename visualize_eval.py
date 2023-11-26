@@ -60,7 +60,7 @@ def preprocess_image(image):
     return inputs 
 
 
-def eval(model, inputs):
+def eval(model, inputs, with_labels=True):
     if model is not None:
         model = AutoModelForSemanticSegmentation.from_pretrained(model)
     # else: # if you want to compare to before-uptrain result
@@ -68,15 +68,18 @@ def eval(model, inputs):
     #                                                       id2label=id2class_general,
     #                                                       ignore_mismatched_sizes=True)
     print(inputs.keys())
-    labels = inputs['labels']
-    # inputs['pixel_mask'] = inputs['pixel_mask']
     outputs = model(pixel_values=inputs['pixel_values'][None, :, :, :])
-    upsampled_logits = nn.functional.interpolate(
-        outputs.logits,
-        size=labels.shape[::-1],
-        mode="bilinear",
-        align_corners=False,
-    )
+    if with_labels:
+        labels = inputs['labels']
+        # inputs['pixel_mask'] = inputs['pixel_mask']
+        upsampled_logits = nn.functional.interpolate(
+            outputs.logits,
+            size=labels.shape[::-1],
+            mode="bilinear",
+            align_corners=False,
+        )
+    else:
+        upsampled_logits = outputs.logits
     result = upsampled_logits.argmax(dim=1)[0]
 
     # model predicts class_queries_logits of shape `(batch_size, num_queries)`
