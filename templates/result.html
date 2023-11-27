@@ -13,11 +13,17 @@ Prediction - Hand Sign Digit Recognition
 
     <header class="text-white text-center">
         <h1 class="display-5">Prediction</h1>
-        {% if predictions %}
-        <h2 class="display-4 text-dark font-weight-bold">{{predictions}}</h2>
+
+        {% if prediction %}
+        <p class="font-italic text-white text-center">The image segmentation prediction will be rendered inside the box
+            below.</p>
+        <div class="image-area mt-4"><img alt="" class="img-fluid rounded shadow-sm mx-auto d-block"
+                                            id="imageResult2" name="imageResult2"
+                                            src="{{ prediction }}""></div>
         {% else %}
         <h2 class="display-4 text-dark font-weight-bold">{{err}}</h2>
         {% endif %}
+
     </header>
 </div>
 {% endblock %}

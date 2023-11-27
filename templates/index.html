@@ -18,6 +18,23 @@ Hand Sign Digit Recognition
 
             <!-- Upload image input-->
             <form action="{{ url_for('predict_image_file') }}" enctype="multipart/form-data" method="POST">
+
+                <!-- Choose model input -->
+                <div class="mb-1 text-white text-center">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="datasetOptions" id="inlineRadio1" value="cloud">
+                        <label class="form-check-label" for="inlineRadio1">Cloud</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="datasetOptions" id="inlineRadio2" value="loveda">
+                        <label class="form-check-label" for="inlineRadio2">LoveDA</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="datasetOptions" id="inlineRadio3" value="floodnet">
+                        <label class="form-check-label" for="inlineRadio3">FloodNet</label>
+                    </div>
+                </div>
+
                 <div class="input-group mb-3 px-2 py-2 rounded-pill bg-white shadow-sm">
                     <input class="form-control border-0" id="upload" name="file" type="file">
                     <label class="font-weight-light text-muted" for="upload" id="upload-label">Choose file</label>

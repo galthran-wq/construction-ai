@@ -1,7 +1,8 @@
-# Importing required libs
+import random
+import string
+
 from flask import Flask, render_template, request
 import numpy as np
-
 import albumentations as A
 from transformers import AutoImageProcessor, AutoModelForSemanticSegmentation
 from PIL import Image
@@ -15,6 +16,18 @@ CONFIG = {
         "h": 256,
         "w": 256,
         "processor": "Intel/dpt-large-ade",
+    },
+    "floodnet": {
+        "path": "./mobilenet_floodnet/checkpoint-6351/",
+        "h": 256,
+        "w": 256,
+        "processor": "apple/deeplabv3-mobilevit-small",
+    },
+    "loveda": {
+        "path": "./mobilenet_loveda/checkpoint-2540/",
+        "h": 256,
+        "w": 256,
+        "processor": "apple/deeplabv3-mobilevit-small",
     },
 }
 
@@ -44,13 +57,11 @@ def preprocess_img(img_path, model="cloud"):
     fig, axs = plt.subplots(1, 2, figsize=(15, 10))
     axs[0].imshow(img)
     axs[1].imshow(result)
-    output = "./static/prediction.png"
-    output = "/mnt/sdb1/home/l.morozov/construction-ai/static/prediction2.png"
+    image_name = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(30))
+    output = f"static/{image_name}.png"
+    print(output)
     fig.savefig(output)
     return output
-    # img_resize = op_img.resize((224, 224))
-    # img2arr = img_to_array(img_resize) / 255.0
-    # return img_reshape
 
 # Instantiating flask app
 app = Flask(__name__)
@@ -67,8 +78,9 @@ def main():
 def predict_image_file():
     try:
         if request.method == 'POST':
-            preprocess_img(request.files['file'].stream)
-            return render_template("result.html")
+            model = request.form['datasetOptions']
+            prediction = preprocess_img(request.files['file'].stream, model=model)
+            return render_template("result.html", prediction=prediction)
 
     except Exception as e:
         error = "File cannot be processed."
