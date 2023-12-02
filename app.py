@@ -14,7 +14,7 @@ from dataset import FloodNet, CloudDataset, LoveDADataset
 
 CONFIG = {
     "cloud": {
-        "path": "./dpt_cloud/checkpoint-10180/",
+        "path": "./models/dpt_cloud/checkpoint-10180/",
         "h": 256,
         "w": 256,
         "processor": "Intel/dpt-large-ade",
@@ -36,7 +36,7 @@ CONFIG = {
     #     "to_scale": False,
     # },
     "floodnet": {
-        "path": "./segformer_floodnet/checkpoint-8760/",
+        "path": "./models/segformer_floodnet/checkpoint-8760/",
         "h": 256,
         "w": 256,
         "processor": "nvidia/mit-b0",
@@ -51,7 +51,7 @@ CONFIG = {
     #     "to_scale": False,
     # },
     "loveda": {
-        "path": "./beit_loveda/checkpoint-3683/",
+        "path": "./models/beit_loveda/checkpoint-3683/",
         "h": 224,
         "w": 224,
         "processor": "microsoft/beit-base-patch16-224-pt22k-ft22k",
