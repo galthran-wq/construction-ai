@@ -60,7 +60,7 @@ def preprocess_image(image):
     return inputs 
 
 
-def eval(model, inputs, with_labels=True):
+def eval(model, inputs, with_labels=True, upsampled_h=None, upsampled_w=None):
     if model is not None:
         model = AutoModelForSemanticSegmentation.from_pretrained(model)
     # else: # if you want to compare to before-uptrain result
@@ -71,10 +71,12 @@ def eval(model, inputs, with_labels=True):
     outputs = model(pixel_values=inputs['pixel_values'][None, :, :, :])
     if with_labels:
         labels = inputs['labels']
+        upsampled_h, upsampled_w = labels.shape
+    if upsampled_w and upsampled_w:
         # inputs['pixel_mask'] = inputs['pixel_mask']
         upsampled_logits = nn.functional.interpolate(
             outputs.logits,
-            size=labels.shape[::-1],
+            size=(upsampled_h, upsampled_w),
             mode="bilinear",
             align_corners=False,
         )
